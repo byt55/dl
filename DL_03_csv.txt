@@ -1,0 +1,116 @@
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+
+
+train_data=pd.read_csv('/content/fashion-mnist_train.csv')
+test_data=pd.read_csv('/content/fashion-mnist_test.csv')
+train_labels = train_data['label']
+test_labels = test_data['label']
+print(train_data.shape,train_labels.shape,test_data.shape,test_labels.shape)
+
+train_data.drop(columns=['label'],inplace=True)
+test_data.drop(columns=['label'],inplace=True)
+
+train_data = train_data.to_numpy().reshape(60000, 28, 28)
+test_data = test_data.to_numpy().reshape(10000, 28, 28)
+
+train_data.shape,train_labels.shape,test_data.shape,test_labels.shape
+
+
+
+
+train_data[0].shape, train_labels[0].shape
+
+
+
+# Create a small list so we can index onto our training labels so they're human-readable
+class_names = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"]
+
+len(class_names)
+
+
+
+
+
+# Plot an example image and its label
+index_of_choice = 2000
+plt.imshow(train_data[index_of_choice], cmap=plt.cm.binary)
+plt.title(class_names[train_labels[index_of_choice]])
+
+train_data[index_of_choice]
+     
+
+
+
+
+
+# We can get our training and testing data between 0 & 1 by dividing by the maximum
+train_data_norm = train_data / 255.0
+test_data_norm = test_data / 255.0
+
+
+
+
+tf.random.set_seed(42)
+
+model=tf.keras.Sequential([
+    tf.keras.layers.Conv2D(filters=64,kernel_size=(3,3),activation='relu',input_shape=(28, 28, 1)),
+    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(10, activation = "softmax")
+])
+
+model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+                 optimizer=tf.keras.optimizers.Adam(),
+                 metrics=["accuracy"])
+
+HISTORY = model.fit(tf.expand_dims(train_data_norm,axis=-1),
+                            train_labels,
+                            epochs=10,
+                            batch_size=64,
+                            validation_data=(test_data_norm, test_labels))
+
+
+
+
+pd.DataFrame(HISTORY.history).plot()
+plt.xlabel('epochs')
+plt.ylabel('accuracy')
+
+
+
+
+from sklearn.metrics import accuracy_score
+
+predictions = model.predict(test_data_norm)
+
+predicted_labels = np.argmax(predictions, axis=1)
+
+accuracy = accuracy_score(test_labels, predicted_labels)
+
+print(f"Test accuracy (using sklearn): {accuracy:.4f}")
+
+
+
+
+
+import random
+ic = random.randint(0, len(test_data_norm) - 1)
+
+plt.imshow(test_data_norm[ic], cmap=plt.cm.binary)
+plt.title("Test Image")
+plt.show()
+
+print(f"Real label: {class_names[test_labels[ic]]}")
+
+pred = model.predict(test_data_norm[ic].reshape(1, 28, 28))
+
+print(f"Predicted label: {class_names[np.argmax(pred)]}")
+
+
+
+
